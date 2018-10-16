@@ -12,6 +12,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.security.PrivateKey;
 
@@ -21,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
     Button submit,view;
     private FirebaseDatabase mDatabase;
     private DatabaseReference mRef;
-
+    private StorageReference storageReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +37,9 @@ public class MainActivity extends AppCompatActivity {
         mDatabase=FirebaseDatabase.getInstance();
         mRef=mDatabase.getReference("user");
 
+
+
+        storageReference = FirebaseStorage.getInstance().getReference();
         submit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
