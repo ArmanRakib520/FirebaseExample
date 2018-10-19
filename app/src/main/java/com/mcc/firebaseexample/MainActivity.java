@@ -4,15 +4,18 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -25,68 +28,92 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
-    private EditText name, email;
-    private Button submit, view, browse;
-    private ImageView image;
-    private FirebaseDatabase mDatabase;
-    private DatabaseReference mRef;
-    private StorageReference mStorage;
+    EditText name, email, phone;
+    Button submit, view ;
+    ImageView image;
+    ImageButton browse;
+    FirebaseDatabase mDatabase;
+    DatabaseReference mRef;
+    StorageReference mStorage;
+    ProgressDialog progressDialog;
+    Uri imageUri;
+    String strImageUri;
+    List<Model> list;
+    RecyclerView recycle;
     private static final int PICK_IMAGE = 100;
-    private ProgressDialog progressDialog;
-    private Uri imageUri;
-    private Bitmap bitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        name = findViewById(R.id.etname);
-        email = findViewById(R.id.etemail);
-        submit = findViewById(R.id.btnsubmit);
-        view = findViewById(R.id.btnview);
-        browse = findViewById(R.id.btnchoose);
-        image = findViewById(R.id.imgUpload);
-
-        progressDialog = new ProgressDialog(this);
-
-
-        mDatabase = FirebaseDatabase.getInstance();
-        mRef = mDatabase.getReference("user");
-
-
-        mStorage = FirebaseStorage.getInstance().getReference();
+        initeView();
 
         submit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Model model = new Model(name.getText().toString(), email.getText().toString());
-                String key = mRef.push().getKey();
 
-                mRef.child(key).setValue(model);
+                if (name.getText().toString().isEmpty()){
+                    Toast.makeText(MainActivity.this, "please Enter Your Name", Toast.LENGTH_SHORT).show();
+                }else if (email.getText().toString().isEmpty()){
+                    Toast.makeText(MainActivity.this, "please Enter Your email", Toast.LENGTH_SHORT).show();
+                }else if (phone.getText().toString().isEmpty()){
+                    Toast.makeText(MainActivity.this, "please Enter Phone Number", Toast.LENGTH_SHORT).show();
+                } else{
+                    Model model = new Model(name.getText().toString(), email.getText().toString(), strImageUri, phone.getText().toString());
+                    String key = mRef.push().getKey();
+                    mRef.child(key).setValue(model);
+                    Toast.makeText(MainActivity.this, "Insert Successfuly", Toast.LENGTH_SHORT).show();
+                    clearText();
+                }
+
             }
         });
+
+        mRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                list = new ArrayList<Model>();
+                for (DataSnapshot dataSnapshot1 : dataSnapshot.getChildren()) {
+
+                    Model value = dataSnapshot1.getValue(Model.class);
+                    Model model = new Model(name.getText().toString(), email.getText().toString(), strImageUri, phone.getText().toString());
+                    String name = value.getName();
+                    String email = value.getEmail();
+                    String image = value.getImage();
+                    String phone=  value.getPhone();
+                    model.setName(name);
+                    model.setEmail(email);
+                    model.setImage(image);
+                    model.setPhone(phone);
+                    list.add(model);
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w("Hello", "Failed to read value.", error.toException());
+            }
+        });
+
 
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mRef.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                            String name = snapshot.child("name").getValue().toString();
-                            String email = snapshot.child("email").getValue().toString();
-                        }
 
-                    }
+                ViewAdapter adapter = new ViewAdapter(list, MainActivity.this);
+               // LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+               // RecyclerView.LayoutManager recyce = new GridLayoutManager(MainActivity.this, 1);
+                //recycle.setLayoutManager(layoutManager);
+                recycle.setItemAnimator(new DefaultItemAnimator());
+                recycle.setAdapter(adapter);
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                    }
-                });
             }
         });
 
@@ -108,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
 
             imageUri = data.getData();
             image.setImageURI(imageUri);
-
             progressDialog.setMessage("Loading....");
             progressDialog.show();
 
@@ -116,14 +142,47 @@ public class MainActivity extends AppCompatActivity {
             filepath.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                    Toast.makeText(MainActivity.this, filepath.getDownloadUrl()+"", Toast.LENGTH_SHORT).show();
-                    Log.d("UPLOAD", filepath.getDownloadUrl()+"");
-                    progressDialog.dismiss();
+                    filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                        @Override
+                        public void onSuccess(Uri uri) {
+                            Log.d("UPLOAD", "onSuccess: uri= " + uri.toString());
+                            progressDialog.dismiss();
+                            strImageUri = uri.toString();
+                        }
 
+                    });
                 }
             });
 
+
         }
 
+
     }
+
+    protected void clearText(){
+        email.setText("");
+        name.setText("");
+        phone.setText("");
+        image.setImageResource(R.drawable.ic_person);
+    }
+
+    protected void initeView(){
+        setContentView(R.layout.activity_main);
+        name = findViewById(R.id.etname);
+        email = findViewById(R.id.etemail);
+        submit = findViewById(R.id.btnsubmit);
+        view = findViewById(R.id.btnview);
+        browse = findViewById(R.id.btnchoose);
+        image = findViewById(R.id.imgUpload);
+        recycle = findViewById(R.id.rcvView);
+        phone =findViewById(R.id.etphone);
+
+
+        progressDialog = new ProgressDialog(this);
+        mDatabase = FirebaseDatabase.getInstance();
+        mRef = mDatabase.getReference("user");
+        mStorage = FirebaseStorage.getInstance().getReference();
+    }
+
 }
