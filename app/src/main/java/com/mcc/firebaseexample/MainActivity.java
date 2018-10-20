@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -34,9 +35,10 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     EditText name, email, phone;
-    Button submit, view ;
+    Button submit, view, back;
     ImageView image;
     ImageButton browse;
+    LinearLayout layoutMain;
     FirebaseDatabase mDatabase;
     DatabaseReference mRef;
     StorageReference mStorage;
@@ -57,13 +59,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                if (name.getText().toString().isEmpty()){
+                if (name.getText().toString().isEmpty()) {
                     Toast.makeText(MainActivity.this, "please Enter Your Name", Toast.LENGTH_SHORT).show();
-                }else if (email.getText().toString().isEmpty()){
+                } else if (email.getText().toString().isEmpty()) {
                     Toast.makeText(MainActivity.this, "please Enter Your email", Toast.LENGTH_SHORT).show();
-                }else if (phone.getText().toString().isEmpty()){
+                } else if (phone.getText().toString().isEmpty()) {
                     Toast.makeText(MainActivity.this, "please Enter Phone Number", Toast.LENGTH_SHORT).show();
-                } else{
+                } else {
                     Model model = new Model(name.getText().toString(), email.getText().toString(), strImageUri, phone.getText().toString());
                     String key = mRef.push().getKey();
                     mRef.child(key).setValue(model);
@@ -85,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                     String name = value.getName();
                     String email = value.getEmail();
                     String image = value.getImage();
-                    String phone=  value.getPhone();
+                    String phone = value.getPhone();
                     model.setName(name);
                     model.setEmail(email);
                     model.setImage(image);
@@ -108,12 +110,19 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 ViewAdapter adapter = new ViewAdapter(list, MainActivity.this);
-               // LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-               // RecyclerView.LayoutManager recyce = new GridLayoutManager(MainActivity.this, 1);
+                // RecyclerView.LayoutManager recyce = new GridLayoutManager(MainActivity.this, 1);
                 //recycle.setLayoutManager(layoutManager);
                 recycle.setItemAnimator(new DefaultItemAnimator());
                 recycle.setAdapter(adapter);
+                viewDetails();
 
+            }
+        });
+
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                viewMain();
             }
         });
 
@@ -160,14 +169,32 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    protected void clearText(){
+    protected void clearText() {
         email.setText("");
         name.setText("");
         phone.setText("");
         image.setImageResource(R.drawable.ic_person);
     }
 
-    protected void initeView(){
+    protected void viewDetails() {
+        layoutMain.setVisibility(View.GONE);
+        back.setVisibility(View.VISIBLE);
+        submit.setVisibility(View.GONE);
+        view.setVisibility(View.GONE);
+        recycle.setVisibility(View.VISIBLE);
+    }
+
+    protected void viewMain() {
+
+        layoutMain.setVisibility(View.VISIBLE);
+        back.setVisibility(View.GONE);
+        submit.setVisibility(View.VISIBLE);
+        view.setVisibility(View.VISIBLE);
+        recycle.setVisibility(View.GONE);
+
+    }
+
+    protected void initeView() {
         setContentView(R.layout.activity_main);
         name = findViewById(R.id.etname);
         email = findViewById(R.id.etemail);
@@ -176,7 +203,9 @@ public class MainActivity extends AppCompatActivity {
         browse = findViewById(R.id.btnchoose);
         image = findViewById(R.id.imgUpload);
         recycle = findViewById(R.id.rcvView);
-        phone =findViewById(R.id.etphone);
+        phone = findViewById(R.id.etphone);
+        layoutMain = findViewById(R.id.lytMain);
+        back = findViewById(R.id.btnback);
 
 
         progressDialog = new ProgressDialog(this);
